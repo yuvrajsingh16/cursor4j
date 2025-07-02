@@ -1,0 +1,190 @@
+<idea-plugin>
+    <id>com.intellij.ai.agent</id>
+    <name>AI Agent for IntelliJ</name>
+    <vendor email="support@example.com" url="https://www.example.com">AI Agent Team</vendor>
+    
+    <description><![CDATA[
+    <p>AI Agent for IntelliJ IDEA - Cursor-like AI capabilities for your IDE</p>
+    
+    <h3>Features:</h3>
+    <ul>
+        <li>AI-powered code completion with multi-line suggestions</li>
+        <li>Interactive AI chat for coding assistance</li>
+        <li>Context-aware code generation</li>
+        <li>Inline AI editing with ghost text</li>
+        <li>AI-powered refactoring suggestions</li>
+        <li>Code explanation and documentation generation</li>
+    </ul>
+    
+    <h3>Supported AI Providers:</h3>
+    <ul>
+        <li>OpenAI (GPT-4, GPT-3.5)</li>
+        <li>Anthropic (Claude)</li>
+        <li>Local models via Ollama</li>
+    </ul>
+    ]]></description>
+    
+    <change-notes><![CDATA[
+    <h3>1.0.0</h3>
+    <ul>
+        <li>Initial release</li>
+        <li>Basic AI completion support</li>
+        <li>Chat interface</li>
+        <li>Code generation actions</li>
+    </ul>
+    ]]></change-notes>
+    
+    <!-- Plugin version requirements -->
+    <idea-version since-build="233.0" until-build="241.*"/>
+    
+    <!-- Dependencies -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>Git4Idea</depends>
+    
+    <!-- Extension Points -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- AI Service -->
+        <applicationService serviceImplementation="com.intellij.ai.core.service.AIServiceManager"/>
+        <projectService serviceImplementation="com.intellij.ai.context.service.ContextCollectorService"/>
+        
+        <!-- Completion -->
+        <completion.contributor 
+            language="any"
+            implementationClass="com.intellij.ai.completion.AICompletionContributor"
+            order="first"/>
+        
+        <!-- ML Features for completion ranking -->
+        <completion.ml.contextFeatures 
+            language="any"
+            implementationClass="com.intellij.ai.completion.ml.AIContextFeatureProvider"/>
+        <completion.ml.elementFeatures 
+            language="any"
+            implementationClass="com.intellij.ai.completion.ml.AIElementFeatureProvider"/>
+        
+        <!-- Editor Extensions -->
+        <editorFactoryListener implementation="com.intellij.ai.editor.InlineAIEditorListener"/>
+        <editorActionHandler action="EditorCompleteStatement" 
+                           implementationClass="com.intellij.ai.editor.AICompleteStatementHandler"
+                           order="first"/>
+        
+        <!-- Tool Windows -->
+        <toolWindow 
+            id="AI Chat"
+            secondary="false"
+            anchor="right"
+            factoryClass="com.intellij.ai.chat.ui.ChatToolWindowFactory"
+            icon="/icons/ai-chat.svg"/>
+        
+        <!-- Settings -->
+        <applicationConfigurable 
+            parentId="tools"
+            instance="com.intellij.ai.settings.AISettingsConfigurable"
+            id="ai.settings"
+            displayName="AI Agent"/>
+        
+        <!-- Status Bar -->
+        <statusBarWidgetFactory 
+            id="AIStatus"
+            implementation="com.intellij.ai.ui.AIStatusBarWidgetFactory"
+            order="after Position"/>
+        
+        <!-- Intentions -->
+        <intentionAction>
+            <className>com.intellij.ai.intentions.ExplainCodeIntention</className>
+            <category>AI Agent</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.intellij.ai.intentions.GenerateDocumentationIntention</className>
+            <category>AI Agent</category>
+        </intentionAction>
+        <intentionAction>
+            <className>com.intellij.ai.intentions.RefactorWithAIIntention</className>
+            <category>AI Agent</category>
+        </intentionAction>
+        
+        <!-- Inspections -->
+        <localInspection
+            language="JAVA"
+            displayName="AI-powered code analysis"
+            groupName="AI Agent"
+            enabledByDefault="false"
+            level="WARNING"
+            implementationClass="com.intellij.ai.inspections.AICodeInspection"/>
+        
+        <!-- Postfix Templates -->
+        <postfixTemplate 
+            implementation="com.intellij.ai.postfix.AIPostfixTemplateProvider"/>
+    </extensions>
+    
+    <!-- Actions -->
+    <actions>
+        <!-- Main Menu -->
+        <group id="AIAgent.MainMenu" text="AI Agent" popup="true">
+            <add-to-group group-id="MainMenu" anchor="after" relative-to-action="ToolsMenu"/>
+            
+            <action id="ai.generateCode"
+                    class="com.intellij.ai.actions.GenerateCodeAction"
+                    text="Generate Code..."
+                    description="Generate code from natural language description">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt G"/>
+            </action>
+            
+            <action id="ai.explainCode"
+                    class="com.intellij.ai.actions.ExplainCodeAction"
+                    text="Explain Code"
+                    description="Get AI explanation for selected code">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt E"/>
+            </action>
+            
+            <separator/>
+            
+            <action id="ai.showChat"
+                    class="com.intellij.ai.actions.ShowChatAction"
+                    text="Show AI Chat"
+                    description="Open AI chat window">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift A"/>
+            </action>
+            
+            <action id="ai.inlineEdit"
+                    class="com.intellij.ai.actions.InlineEditAction"
+                    text="Inline AI Edit"
+                    description="Edit code inline with AI assistance">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl K"/>
+            </action>
+        </group>
+        
+        <!-- Editor Popup Menu -->
+        <group id="AIAgent.EditorPopup">
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="RefactoringMenu"/>
+            <separator/>
+            <reference ref="ai.generateCode"/>
+            <reference ref="ai.explainCode"/>
+            <reference ref="ai.inlineEdit"/>
+        </group>
+        
+        <!-- Editor Context Menu -->
+        <action id="ai.acceptSuggestion"
+                class="com.intellij.ai.actions.AcceptSuggestionAction"
+                text="Accept AI Suggestion"
+                use-shortcut-of="EditorChooseLookupItem"/>
+        
+        <action id="ai.rejectSuggestion"
+                class="com.intellij.ai.actions.RejectSuggestionAction"
+                text="Reject AI Suggestion"
+                use-shortcut-of="EditorEscape"/>
+    </actions>
+    
+    <!-- Application Components -->
+    <applicationListeners>
+        <listener class="com.intellij.ai.listeners.AIPluginStartupListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+    
+    <!-- Project Components -->
+    <projectListeners>
+        <listener class="com.intellij.ai.listeners.ProjectOpenListener"
+                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
+    </projectListeners>
+</idea-plugin>
